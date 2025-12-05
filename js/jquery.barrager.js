@@ -1,83 +1,66 @@
-/**
- *@name     jquery.barrager.js
- *@version  1.1
- *@author   yaseng@uauc.net
- *@url      https://github.com/yaseng/jquery.barrager.js
- */
-(function($) {
-	$.fn.barrager = function(barrage) {
-		barrage = $.extend({
-			close: true,
-			max: 10,
-			speed: 16,
-			color: '#ffffff',
-		}, barrage || {});
+$(function () {
+    do_barrager();
 
-		const time = new Date().getTime();
-		const barrager_id = 'barrage_' + time;
-		const id = '#' + barrager_id;
-		const div_barrager = $("<div class='barrage' id='" + barrager_id + "'></div>").appendTo($(this));
-		const this_height = $(window).height() * 0.35;
-		const this_width = $(window).width() + 100;
-		const array = [
-			(this_height / 5) + $(window).height() * 0.5,
-			2*(this_height / 5) + $(window).height() * 0.5,
-			3*(this_height / 5) + $(window).height() * 0.5,
-			4*(this_height / 5) + $(window).height() * 0.5,
-			5*(this_height / 5)   + $(window).height() * 0.5
-		]
-		const bottom =array[Math.floor(Math.random()*5)];
+    async function do_barrager() {
+        const query = new AV.Query('barrager');
+        const lists = await query.find(); // 获取弹幕数据
+        let index = 0;
 
-		div_barrager.css("bottom", bottom + "px");
-		div_barrager_box = $("<div class='barrage_box cl'></div>").appendTo(div_barrager);
-		if(barrage.img){
-			div_barrager_box.append("<a class='portrait z' href='javascript:;'></a>");
-			const img = $("<img src='' >").appendTo(id + " .barrage_box .portrait");
-			img.attr('src', barrage.img);
-		}
-		div_barrager_box.append(" <div class='z p'></div>");
-		if(barrage.close){
-			div_barrager_box.append(" <div class='close z'></div>");
-		}
+        const timer = setInterval(() => {
+            if (index >= lists.length) {
+                clearInterval(timer);
+            } else {
+                const obj = lists[index];
+                const jsonObject = JSON.parse(JSON.stringify(obj));
 
-		const content = $("<a title='' href='' target='_blank'></a>").appendTo(id + " .barrage_box .p");
-		content.attr({
-			'href': barrage.href,
-			'id': barrage.id
-		}).empty().append(barrage.info);
-		content.css('color', barrage.color);
+                // 往 #commentList 添加一条评论
+                $('#commentList').append(`
+                    <div class="comment-item">
+                        <img src="/medias/barrager/${Math.floor(Math.random() * 3)}.png" alt="头像">
+                        <div class="comment-text">
+                            <a href="${jsonObject.href}" target="_blank">${jsonObject.info}</a>
+                        </div>
+                    </div>
+                `);
 
-		const i = 0;
-		div_barrager.css('margin-right', 0);
-		
- 		$(id).animate({right:this_width},barrage.speed*1000,function()
-		{
-			$(id).remove();
-		});
+                index++;
+            }
+        }, 500);
+    }
+});
 
-		div_barrager_box.mouseover(function()
-		{
-		     $(id).stop(true);
-		});
+// 发送评论
+function run() {
+    let info = $('input[name=info]').val() || 'hello world';
+    let href = $('input[name=href]').val() || 'https://github.com/blinkfox/hexo-theme-matery';
+    let speed = parseInt($('input[name=speed]').val());
+    if (speed > 20 || speed < 5) speed = Math.floor(Math.random() * 10) + 5;
 
-		div_barrager_box.mouseout(function()
-		{
-			$(id).animate({right:this_width},barrage.speed*1000,function()
-			{
-				$(id).remove();
-			});
- 		});
+    const Barrager = AV.Object.extend('barrager');
+    const barrager = new Barrager();
+    barrager.set('href', href);
+    barrager.set('info', info);
+    barrager.set('speed', speed);
 
-		$(id+'.barrage .barrage_box .close').click(function()
-		{
-			$(id).remove();
-		})
-	}
+    barrager.save().then(() => {
+        // 添加到列表中
+        $('#commentList').append(`
+            <div class="comment-item">
+                <img src="/medias/barrager/${Math.floor(Math.random() * 3)}.png" alt="头像">
+                <div class="comment-text">
+                    <a href="${href}" target="_blank">${info}</a>
+                </div>
+            </div>
+        `);
 
+        // 清空输入框
+        $('input[name=info]').val('');
+        $('input[name=href]').val('');
+        $('input[name=speed]').val('');
+    });
+}
 
-	$.fn.barrager.removeAll=function()
-	{
-		 $('.barrage').remove();
-	}
-
-})(jQuery);
+// 清空评论
+function clear_barrage() {
+    $('#commentList').empty();
+}
